@@ -172,3 +172,23 @@ class MultiHeadLatentAttention(nn.Module):
             present_key_value = (compressed_kv,)  # Only store compressed representation
 
         return output, present_key_value
+    
+
+class MLABlock(nn.Module):
+    """A transformer block using MLA attention"""
+    def __init__(self,
+                hidden_size: int,
+                num_heads: int,
+                kv_lora_rank: int = 512, 
+                intermediate_size: int = None,
+                dropout: float = 0.1,
+                layer_norm_eps: float = 1e-5,
+                max_position_embeddings: int = 2048):
+        super().__init__()
+
+        self.hidden_size = hidden_size
+        intermediate_size = intermediate_size or 4 * hidden_size
+
+        # Layer norms 
+        self.input_layernorm = nn.LayerNorm(hidden_size, eps=layer_norm_eps)
+        self.output_layernorm = nn.LayerNorm(hidden_size, eps=layer_norm_eps)
