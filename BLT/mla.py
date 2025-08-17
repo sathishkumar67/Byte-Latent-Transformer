@@ -175,20 +175,114 @@ class MultiHeadLatentAttention(nn.Module):
     
 
 class MLABlock(nn.Module):
-    """A transformer block using MLA attention"""
-    def __init__(self,
-                hidden_size: int,
-                num_heads: int,
-                kv_lora_rank: int = 512, 
-                intermediate_size: int = None,
-                dropout: float = 0.1,
-                layer_norm_eps: float = 1e-5,
-                max_position_embeddings: int = 2048):
-        super().__init__()
+    """
+    MLABlock: Transformer block using Multi-Head Latent Attention (MLA).
 
+    This block consists of:
+      - Layer normalization before attention
+      - MLA attention mechanism
+      - Residual connection and dropout after attention
+      - Layer normalization before feed-forward network
+      - Feed-forward network (MLP) with GELU activation and dropout
+      - Residual connection after feed-forward
+
+    Args:
+        hidden_size (int): Dimensionality of input hidden states.
+        num_heads (int): Number of attention heads.
+        kv_lora_rank (int, optional): Rank for low-rank KV compression. Default: 512.
+        intermediate_size (int, optional): Size of intermediate layer in MLP. Default: 4 * hidden_size.
+        dropout (float, optional): Dropout probability. Default: 0.1.
+        layer_norm_eps (float, optional): Epsilon for layer normalization. Default: 1e-5.
+        max_position_embeddings (int, optional): Maximum sequence length for positional encoding. Default: 2048.
+    """
+    def __init__(
+        self,
+        hidden_size: int,
+        num_heads: int,
+        kv_lora_rank: int = 512,
+        intermediate_size: int = None,
+        dropout: float = 0.1,
+        layer_norm_eps: float = 1e-5,
+        max_position_embeddings: int = 2048
+    ):
+        """
+        Initializes the MLABlock.
+
+        Sets up layer normalization, MLA attention, feed-forward network, and dropout.
+        """
+        super().__init__()
+        
         self.hidden_size = hidden_size
         intermediate_size = intermediate_size or 4 * hidden_size
-
-        # Layer norms 
+        
+        # Layer normalization before attention
         self.input_layernorm = nn.LayerNorm(hidden_size, eps=layer_norm_eps)
-        self.output_layernorm = nn.LayerNorm(hidden_size, eps=layer_norm_eps)
+        # Layer normalization before feed-forward
+        self.post_attention_layernorm = nn.LayerNorm(hidden_size, eps=layer_norm_eps)
+        
+        # MLA attention mechanism
+        self.attention = MultiHeadLatentAttention(
+            hidden_size=hidden_size,
+            num_heads=num_heads,
+            kv_lora_rank=kv_lora_rank,
+            max_position_embeddings=max_position_embeddings,
+            dropout=dropout
+        )
+        
+        # Feed-forward network (MLP) with GELU activation and dropout
+        self.mlp = nn.Sequential(
+            nn.Linear(hidden_size, intermediate_size),
+            nn.GELU(),
+            nn.Linear(intermediate_size, hidden_size),
+            nn.Dropout(dropout)
+        )
+        
+        # Dropout after attention
+        self.dropout = nn.Dropout(dropout)
+    
+    def forward(
+        self,
+        hidden_states: torch.Tensor,
+        attention_mask: Optional[torch.Tensor] = None,
+        past_key_value: Optional[Tuple[torch.Tensor, torch.Tensor]] = None,
+        use_cache: bool = False
+    ):
+        """
+        Forward pass for MLABlock.
+
+        Applies layer normalization, MLA attention, residual connection, dropout,
+        feed-forward network, and returns output and present_key_value for caching.
+
+        Args:
+            hidden_states (torch.Tensor): Input tensor of shape [batch_size, seq_len, hidden_size].
+            attention_mask (Optional[torch.Tensor]): Optional mask tensor for attention.
+            past_key_value (Optional[Tuple[torch.Tensor, torch.Tensor]]): Optional cached KV states.
+            use_cache (bool): If True, returns present_key_value for caching.
+
+        Returns:
+            Tuple[torch.Tensor, Optional[Tuple[torch.Tensor, torch.Tensor]]]:
+                - hidden_states: Output tensor after attention and feed-forward.
+                - present_key_value: Cached compressed KV states (if use_cache is True).
+        """
+        # Save residual for attention block
+        residual = hidden_states
+        # Apply layer normalization before attention
+        hidden_states = self.input_layernorm(hidden_states)
+        # MLA attention mechanism
+        attention_output, present_key_value = self.attention(
+            hidden_states,
+            attention_mask=attention_mask,
+            past_key_value=past_key_value,
+            use_cache=use_cache
+        )
+        # Add residual and apply dropout after attention
+        hidden_states = residual + self.dropout(attention_output)
+        
+        # Save residual for feed-forward block
+        residual = hidden_states
+        # Apply layer normalization before feed-forward
+        hidden_states = self.post_attention_layernorm(hidden_states)
+        # Feed-forward network with residual connection
+        hidden_states = residual + self.mlp(hidden_states)
+        
+        return hidden_states, present_key_value
