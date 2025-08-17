@@ -36,7 +36,8 @@ class MultiHeadLatentAttention(nn.Module):
         qk_nope_head_dim: int = 128,
         max_position_embeddings: int = 2048,
         rope_base: int = 10000,
-        dropout: float = 0.0
+        dropout: float = 0.0,
+        training: bool = True
     ):
         """
         Initialize the MultiHeadLatentAttention module.
@@ -51,6 +52,7 @@ class MultiHeadLatentAttention(nn.Module):
         self.qk_rope_head_dim = qk_rope_head_dim
         self.qk_nope_head_dim = qk_nope_head_dim
         self.v_head_dim = v_head_dim
+        self.training = training
 
         # Calculate head dimensions
         self.q_head_dim = qk_nope_head_dim + qk_rope_head_dim  # Query head dimension
@@ -76,11 +78,8 @@ class MultiHeadLatentAttention(nn.Module):
             base=rope_base
         )
 
-        # Dropout for attention weights
-        self.dropout = nn.Dropout(dropout)
-
-        # Scaling factor for attention scores (for numerical stability)
-        self.scale = 1.0 / math.sqrt(self.q_head_dim)
+        # Store dropout probability for scaled_dot_product_attention
+        self.dropout_p = dropout
     
     def forward(
         self,
@@ -147,19 +146,16 @@ class MultiHeadLatentAttention(nn.Module):
         keys = keys.transpose(1, 2)
         values = values.transpose(1, 2)
 
-        # Compute scaled dot-product attention scores
-        attention_scores = torch.matmul(queries, keys.transpose(-2, -1)) * self.scale
-
-        # Add attention mask if provided (for padding or causal masking)
-        if attention_mask is not None:
-            attention_scores = attention_scores + attention_mask
-
-        # Compute attention weights using softmax and apply dropout
-        attention_weights = F.softmax(attention_scores, dim=-1)
-        attention_weights = self.dropout(attention_weights)
-
-        # Compute attention output by weighted sum of values
-        attention_output = torch.matmul(attention_weights, values)
+        # Use scaled_dot_product_attention for efficient attention computation
+        # This function internally handles scaling, masking, softmax, and dropout
+        attention_output = F.scaled_dot_product_attention(
+            queries,
+            keys,
+            values,
+            attn_mask=attention_mask,
+            dropout_p=self.dropout_p if self.training else 0.0,
+            scale=1.0 / math.sqrt(self.q_head_dim)
+        )
 
         # Reshape and project output back to hidden size
         attention_output = attention_output.transpose(1, 2).contiguous()
