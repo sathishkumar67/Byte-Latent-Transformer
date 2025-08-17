@@ -4,6 +4,7 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from .rope import RotaryPositionEmbedding
 
 
 class MultiHeadLatentAttention(nn.Module):
