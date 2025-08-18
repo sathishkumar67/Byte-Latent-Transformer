@@ -1,1 +1,1 @@
-1. need to optimise the mla block
+1. need to optimise gqa, mla
