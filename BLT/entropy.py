@@ -24,11 +24,12 @@ class EntropyConfig:
 	max_position_embeddings: int = 2048
 	rope_base: int = 10000
 	dropout: float = 0.0
-	bias: bool = False
+	attn_bias: bool = False
 
 	# MLP hyperparameters
 	mlp_hidden_dim: Optional[int] = None  # If None, will be set to 4 * hidden_size
 	mlp_dropout: float = 0.0
+	mlp_bias: bool = True
 
 	# RMSNorm hyperparameters
 	rmsnorm_eps: float = 1e-8
@@ -36,3 +37,42 @@ class EntropyConfig:
 	# RotaryPositionEmbedding hyperparameters
 	rotary_max_position_embeddings: int = 2048
 	rotary_base: int = 10000
+	
+
+class EntropyBlock(nn.Module):
+	def __init__(self, config: EntropyConfig):
+		super().__init__()
+		self.attention = MultiHeadLatentAttentionWithGQAFused(
+			hidden_size=config.hidden_size,
+			num_heads=config.num_heads,
+			n_kv_heads=config.n_kv_heads,
+			kv_lora_rank=config.kv_lora_rank,
+			qk_rope_head_dim=config.qk_rope_head_dim,
+			v_head_dim=config.v_head_dim,
+			qk_nope_head_dim=config.qk_nope_head_dim,
+			max_position_embeddings=config.max_position_embeddings,
+			rope_base=config.rope_base,
+			dropout=config.dropout,
+        )
+		self.mlp = MLPwithSwiGLU(
+			input_dim=config.hidden_size,
+			hidden_dim=config.mlp_hidden_dim or 4 * config.hidden_size,
+			dropout=config.mlp_dropout
+		)
+		self.rmsnorm = RMSNorm(
+			dim=config.hidden_size,
+			eps=config.rmsnorm_eps
+		)
+		self.rotary_emb = RotaryPositionEmbedding(
+			dim=config.rotary_max_position_embeddings,
+			base=config.rotary_base
+		)
+
+	def forward(self, hidden_states: torch.Tensor, attention_mask: Optional[torch.Tensor] = None) -> torch.Tensor:
+		# Apply attention
+		attn_output, _ = self.attention(hidden_states, attention_mask=attention_mask)
+		# Apply MLP
+		mlp_output = self.mlp(attn_output)
+		# Apply RMSNorm
+		output = self.rmsnorm(mlp_output)
+		return output

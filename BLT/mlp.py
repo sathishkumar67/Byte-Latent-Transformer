@@ -22,8 +22,10 @@ class MLPwithSwiGLU(nn.Module):
         w2 (nn.Linear): Output projection layer.
         w3 (nn.Linear): Gating projection layer for GLU.
         dropout (nn.Dropout): Dropout layer applied to output.
+        w2.SCALE_INIT (float): Custom attribute for initialization scaling (if used in downstream code).
+        mlp_bias (bool): Whether to use bias in MLP layers.
     """
-    def __init__(self, dim: int, hidden_dim: Optional[int] = None, dropout: Optional[float] = 0.0) -> None:
+    def __init__(self, dim: int, hidden_dim: Optional[int] = None, dropout: Optional[float] = 0.0, mlp_bias: bool = True) -> None:
         """
         Initializes the MLPwithSwiGLU module.
 
@@ -40,11 +42,11 @@ class MLPwithSwiGLU(nn.Module):
         hidden_dim = (hidden_dim + 255) // 256 * 256
 
         # First projection layer (input to hidden)
-        self.w1 = nn.Linear(dim, hidden_dim, bias=False)
+        self.w1 = nn.Linear(dim, hidden_dim, bias=mlp_bias)
         # Output projection layer (hidden to output)
-        self.w2 = nn.Linear(hidden_dim, dim, bias=False)
+        self.w2 = nn.Linear(hidden_dim, dim, bias=mlp_bias)
         # Gating projection layer for GLU (input to hidden)
-        self.w3 = nn.Linear(dim, hidden_dim, bias=False)
+        self.w3 = nn.Linear(dim, hidden_dim, bias=mlp_bias)
         # Dropout layer applied after output projection
         self.dropout = nn.Dropout(dropout)
 
