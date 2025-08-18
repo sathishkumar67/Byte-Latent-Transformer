@@ -28,7 +28,6 @@ class MultiHeadLatentAttentionWithGQAFused(nn.Module):
         rope_base (int, optional): Base for rotary positional encoding. Default: 10000.
         dropout (float, optional): Dropout probability for attention weights. Default: 0.0.
         bias (bool, optional): If True, adds bias to linear layers. Default: False.
-        training (bool, optional): If True, enables dropout during attention. Default: True.
 
     Attributes:
         hidden_size (int): Model dimensionality.
@@ -61,8 +60,7 @@ class MultiHeadLatentAttentionWithGQAFused(nn.Module):
         max_position_embeddings: int = 2048,
         rope_base: int = 10000,
         dropout: float = 0.0,
-        bias: bool = False,
-        training: bool = True
+        bias: bool = False
     ):
         """
         Initialize the MultiHeadLatentAttentionWithGQAFused module.
@@ -75,7 +73,8 @@ class MultiHeadLatentAttentionWithGQAFused(nn.Module):
         if n_kv_heads is None:
             n_kv_heads = num_heads
 
-        # Ensure number of heads is compatible with grouping
+        # Condition checking
+        assert hidden_size % num_heads == 0, "hidden_size must be divisible by num_heads"
         assert num_heads % n_kv_heads == 0, "num_heads must be divisible by n_kv_heads"
 
         self.hidden_size = hidden_size
@@ -86,7 +85,7 @@ class MultiHeadLatentAttentionWithGQAFused(nn.Module):
         self.qk_rope_head_dim = qk_rope_head_dim
         self.qk_nope_head_dim = qk_nope_head_dim
         self.v_head_dim = v_head_dim
-        self.training = training
+        self.dropout_p = dropout
 
         self.q_head_dim = qk_nope_head_dim + qk_rope_head_dim  # Query head dimension
         self.kv_head_dim = self.q_head_dim                     # Key head dimension
@@ -100,8 +99,8 @@ class MultiHeadLatentAttentionWithGQAFused(nn.Module):
         )
 
         # Decompression layers for keys and values (for n_kv_heads)
-        self.k_up_proj = nn.Linear(kv_lora_rank, n_kv_heads * self.kv_head_dim, bias=False)
-        self.v_up_proj = nn.Linear(kv_lora_rank, n_kv_heads * self.v_head_dim, bias=False)
+        self.k_up_proj = nn.Linear(kv_lora_rank, n_kv_heads * self.kv_head_dim, bias=bias)
+        self.v_up_proj = nn.Linear(kv_lora_rank, n_kv_heads * self.v_head_dim, bias=bias)
 
         # Output projection to map attention output back to hidden size
         self.o_proj = nn.Linear(num_heads * self.v_head_dim, hidden_size, bias=bias)
@@ -113,7 +112,6 @@ class MultiHeadLatentAttentionWithGQAFused(nn.Module):
             base=rope_base
         )
 
-        self.dropout_p = dropout
 
     def forward(
         self,
@@ -121,7 +119,7 @@ class MultiHeadLatentAttentionWithGQAFused(nn.Module):
         attention_mask: Optional[torch.Tensor] = None,
         past_key_value: Optional[Tuple[torch.Tensor, torch.Tensor]] = None,
         use_cache: bool = False,
-        is_causal: bool = False
+        is_causal: bool = True
     ) -> Tuple[torch.Tensor, Optional[Tuple[torch.Tensor, torch.Tensor]]]:
         """
         Forward pass for MultiHeadLatentAttentionWithGQAFused.
@@ -159,8 +157,7 @@ class MultiHeadLatentAttentionWithGQAFused(nn.Module):
         # Decompress compressed KV to keys and values
         # keys: [batch_size, kv_seq_len, n_kv_heads * kv_head_dim]
         # values: [batch_size, kv_seq_len, n_kv_heads * v_head_dim]
-        keys = self.k_up_proj(compressed_kv)
-        values = self.v_up_proj(compressed_kv)
+        keys, values = self.k_up_proj(compressed_kv), self.v_up_proj(compressed_kv)
 
         # Reshape keys and values for multi-head attention
         # keys: [batch_size, kv_seq_len, n_kv_heads, kv_head_dim]
@@ -194,7 +191,7 @@ class MultiHeadLatentAttentionWithGQAFused(nn.Module):
         output = F.scaled_dot_product_attention(
             queries, keys, values,
             attn_mask=attention_mask,
-            dropout_p=self.dropout_p if self.training else 0.0,
+            dropout_p=self.dropout_p,
             is_causal=is_causal and attention_mask is None,
             scale=1.0 / math.sqrt(self.q_head_dim)
         )
@@ -208,6 +205,11 @@ class MultiHeadLatentAttentionWithGQAFused(nn.Module):
         present_key_value = (compressed_kv,) if use_cache else None
 
         return output, present_key_value    
+
+
+
+
+
 
 # class MultiHeadLatentAttention(nn.Module):
 #     """
