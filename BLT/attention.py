@@ -104,6 +104,7 @@ class MultiHeadLatentAttentionWithGQAFused(nn.Module):
 
         # Output projection to map attention output back to hidden size
         self.o_proj = nn.Linear(num_heads * self.v_head_dim, hidden_size, bias=bias)
+        self.o_proj.SCALE_INIT = 1  # Custom attribute for initialization scaling
 
         # Rotary positional embedding for RoPE part of Q/K
         self.rotary_emb = RotaryPositionEmbedding(
