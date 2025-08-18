@@ -10,6 +10,7 @@ from .attention import MultiHeadLatentAttentionWithGQAFused
 from typing import Optional
 
 
+
 @dataclass
 class EntropyConfig:
     # Attention hyperparameters
@@ -22,9 +23,8 @@ class EntropyConfig:
 	qk_nope_head_dim: int = 128
 	max_position_embeddings: int = 2048
 	rope_base: int = 10000
-	dropout: float = 0.1
+	dropout: float = 0.0
 	bias: bool = False
-	training: bool = True
 
 	# MLP hyperparameters
 	mlp_hidden_dim: Optional[int] = None  # If None, will be set to 4 * hidden_size
@@ -34,6 +34,5 @@ class EntropyConfig:
 	rmsnorm_eps: float = 1e-8
 
 	# RotaryPositionEmbedding hyperparameters
-	rotary_dim: int = 64  # Typically head_dim
 	rotary_max_position_embeddings: int = 2048
 	rotary_base: int = 10000
