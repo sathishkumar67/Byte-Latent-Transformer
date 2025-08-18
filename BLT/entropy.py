@@ -23,7 +23,7 @@ class EntropyConfig:
 	qk_nope_head_dim: int = 128
 	max_position_embeddings: int = 2048
 	rope_base: int = 10000
-	dropout: float = 0.0
+	attn_dropout: float = 0.0
 	attn_bias: bool = False
 
 	# MLP hyperparameters
@@ -52,13 +52,15 @@ class EntropyBlock(nn.Module):
 			qk_nope_head_dim=config.qk_nope_head_dim,
 			max_position_embeddings=config.max_position_embeddings,
 			rope_base=config.rope_base,
-			dropout=config.dropout,
+			attn_dropout=config.attn_dropout,
+			attn_bias=config.attn_bias
         )
 		self.mlp = MLPwithSwiGLU(
-			input_dim=config.hidden_size,
-			hidden_dim=config.mlp_hidden_dim or 4 * config.hidden_size,
-			dropout=config.mlp_dropout
-		)
+			dim=config.hidden_size,
+            hidden_dim=config.mlp_hidden_dim,
+            dropout=config.mlp_dropout,
+            mlp_bias=config.mlp_bias
+        )
 		self.rmsnorm = RMSNorm(
 			dim=config.hidden_size,
 			eps=config.rmsnorm_eps

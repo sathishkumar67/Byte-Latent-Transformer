@@ -59,7 +59,7 @@ class MultiHeadLatentAttentionWithGQAFused(nn.Module):
         qk_nope_head_dim: int = 128,
         max_position_embeddings: int = 2048,
         rope_base: int = 10000,
-        dropout: float = 0.0,
+        attn_dropout: float = 0.0,
         attn_bias: bool = False
     ):
         """
@@ -85,7 +85,7 @@ class MultiHeadLatentAttentionWithGQAFused(nn.Module):
         self.qk_rope_head_dim = qk_rope_head_dim
         self.qk_nope_head_dim = qk_nope_head_dim
         self.v_head_dim = v_head_dim
-        self.dropout_p = dropout
+        self.attn_dropout = attn_dropout
 
         self.q_head_dim = qk_nope_head_dim + qk_rope_head_dim  # Query head dimension
         self.kv_head_dim = self.q_head_dim                     # Key head dimension
@@ -192,7 +192,7 @@ class MultiHeadLatentAttentionWithGQAFused(nn.Module):
         output = F.scaled_dot_product_attention(
             queries, keys, values,
             attn_mask=attention_mask,
-            dropout_p=self.dropout_p,
+            dropout_p=self.attn_dropout,
             is_causal=is_causal and attention_mask is None,
             scale=1.0 / math.sqrt(self.q_head_dim)
         )
