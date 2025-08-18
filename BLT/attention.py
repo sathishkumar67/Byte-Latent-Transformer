@@ -95,15 +95,15 @@ class MultiHeadLatentAttentionWithGQAFused(nn.Module):
         self.qkv_proj = nn.Linear(
             hidden_size,
             num_heads * self.q_head_dim + kv_lora_rank,
-            bias=bias
+            bias=attn_bias
         )
 
         # Decompression layers for keys and values (for n_kv_heads)
-        self.k_up_proj = nn.Linear(kv_lora_rank, n_kv_heads * self.kv_head_dim, bias=bias)
-        self.v_up_proj = nn.Linear(kv_lora_rank, n_kv_heads * self.v_head_dim, bias=bias)
+        self.k_up_proj = nn.Linear(kv_lora_rank, n_kv_heads * self.kv_head_dim, bias=attn_bias)
+        self.v_up_proj = nn.Linear(kv_lora_rank, n_kv_heads * self.v_head_dim, bias=attn_bias)
 
         # Output projection to map attention output back to hidden size
-        self.o_proj = nn.Linear(num_heads * self.v_head_dim, hidden_size, bias=bias)
+        self.o_proj = nn.Linear(num_heads * self.v_head_dim, hidden_size, bias=attn_bias)
         self.o_proj.SCALE_INIT = 1  # Custom attribute for initialization scaling
 
         # Rotary positional embedding for RoPE part of Q/K
