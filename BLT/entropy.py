@@ -64,17 +64,4 @@ class EntropyBlock(nn.Module):
 		self.rmsnorm = RMSNorm(
 			dim=config.hidden_size,
 			eps=config.rmsnorm_eps
-		)
-		self.rotary_emb = RotaryPositionEmbedding(
-			dim=config.rotary_max_position_embeddings,
-			base=config.rotary_base
-		)
-
-	def forward(self, hidden_states: torch.Tensor, attention_mask: Optional[torch.Tensor] = None) -> torch.Tensor:
-		# Apply attention
-		attn_output, _ = self.attention(hidden_states, attention_mask=attention_mask)
-		# Apply MLP
-		mlp_output = self.mlp(attn_output)
-		# Apply RMSNorm
-		output = self.rmsnorm(mlp_output)
-		return output
+        )
