@@ -1,7 +1,7 @@
 from .rope import RotaryPositionEmbedding
-from .mla import MultiHeadLatentAttention
+from .attention import MultiHeadLatentAttentionWithGQAFused
 
 __all__ = [
     "RotaryPositionEmbedding",
-    "MultiHeadLatentAttention"
+    "MultiHeadLatentAttentionWithGQAFused"
 ]
