@@ -58,7 +58,7 @@ class EntropyBlock(nn.Module):
 		self.mlp = MLPwithSwiGLU(
 			dim=config.hidden_size,
             hidden_dim=config.mlp_hidden_dim,
-            dropout=config.mlp_dropout,
+			mlp_dropout=config.mlp_dropout,
             mlp_bias=config.mlp_bias
         )
 		self.rmsnorm = RMSNorm(
