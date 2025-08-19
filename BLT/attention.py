@@ -61,7 +61,7 @@ class MultiHeadLatentAttentionWithGQAFused(nn.Module):
         rope_base: int = 10000,
         attn_dropout: float = 0.0,
         attn_bias: bool = False
-    ):
+    ) -> None:
         """
         Initialize the MultiHeadLatentAttentionWithGQAFused module.
 

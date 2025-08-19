@@ -26,7 +26,7 @@ class RotaryPositionEmbedding(nn.Module):
         sin_cached (torch.Tensor): Cached sine values for all positions.
     """
 
-    def __init__(self, dim: int, max_position_embeddings: int = 2048, base: int = 10000):
+    def __init__(self, dim: int, max_position_embeddings: int = 2048, base: int = 10000) -> None:
         """
         Initializes the RotaryPositionEmbedding module.
 
@@ -43,8 +43,8 @@ class RotaryPositionEmbedding(nn.Module):
         
         # Build and cache cosine and sine embeddings for all positions
         self._build_cache()
-    
-    def _build_cache(self):
+
+    def _build_cache(self) -> None:
         """
         Precompute and cache cosine and sine embeddings for all positions up to max_position_embeddings.
         """
