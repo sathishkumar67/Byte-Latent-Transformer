@@ -136,7 +136,7 @@ class EntropyBlock(nn.Module):
             self.rmsnorm_1(hidden_states),
             attention_mask=attention_mask,
             past_key_value=past_key_value
-        )
+        )[0]  # attention returns a tuple (output, present_key_value), we only need output here
 
         # Pre-MLP normalization and MLP block with residual connection
         hidden_states = hidden_states + self.mlp(self.rmsnorm_2(hidden_states))
