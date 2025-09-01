@@ -61,3 +61,31 @@ class TokenDataset(Dataset):
         # Target: next block_size tokens (shifted by one)
         target_tensor = torch.tensor(self.input_ids[start_idx+1:end_idx+1], dtype=torch.long)
         return input_tensor, target_tensor
+    
+
+
+# def process_input_ids(input_ids: ndarray, block_size: int, pad_token_id: int) -> List[int]:
+#     """
+#     Processes the input_ids to ensure their length is divisible by block_size.
+
+#     Args:
+#         input_ids (list[int]): The list of input IDs.
+#         block_size (int): The size of the blocks.
+#         pad_token_id (int): The ID used for padding.
+
+#     Returns:
+#         list[int]: The processed input IDs.
+#     """
+#     # convert input_ids to a list
+#     input_ids = input_ids.tolist()
+
+#     # check if the length of the input_ids is divisible by the block size
+#     if (len(input_ids) - 1) % block_size == 0:
+#         print("The length of the input_ids is divisible by the block size.")
+#         return input_ids
+#     else:
+#         remainder = (len(input_ids) - 1) % block_size
+#         padding_length = block_size - remainder
+#         input_ids.extend([pad_token_id] * padding_length)
+#         print("The length of the input_ids is not divisible by the block size.")
+#         return input_ids
