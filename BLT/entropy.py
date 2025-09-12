@@ -26,7 +26,7 @@ class EntropyConfig:
 	qk_rope_head_dim: int = 64
 	v_head_dim: int = 128
 	qk_nope_head_dim: int = 128
-	max_position_embeddings: int = 2048
+	max_position_embeddings: int = 4096
 	rope_base: int = 10000
 	attn_dropout: float = 0.0
 	attn_bias: bool = False
@@ -40,7 +40,7 @@ class EntropyConfig:
 	rmsnorm_eps: float = 1e-8
 
 	# RotaryPositionEmbedding hyperparameters
-	rotary_max_position_embeddings: int = 2048
+	rotary_max_position_embeddings: int = 4096
 	rotary_base: int = 10000
 
 
