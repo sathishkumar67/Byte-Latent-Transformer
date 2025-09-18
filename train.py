@@ -50,12 +50,10 @@ optimizer = configure_optimizer(model)
 # Create dataset and dataloader
 dataset = TokenDataset(block_size=4096, input_ids=tokens)
 dataloader = torch.utils.data.DataLoader(dataset, 
-                                        batch_size=6, 
+                                        batch_size=4, 
                                         shuffle=True,
-                                        pin_memory=True,
-                                        pin_memory_device='cuda',
                                         num_workers=os.cpu_count(),
-                                        prefetch_factor=2)
+                                        prefetch_factor=4)
 
 # Initialize model wrapper
 model_wrapper = EntropyWrapper.load_from_checkpoint(f"{LOCAL_DIR}/{CKPT_NAME}", config=config, model=model)
