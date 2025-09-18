@@ -3,6 +3,7 @@ from dataclasses import dataclass
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import lightning as L
 from BLT.norms import RMSNorm
 from BLT.mlp import MLPwithSwiGLU
 from BLT.attention import MultiHeadLatentAttentionWithGQAFused
@@ -236,3 +237,110 @@ class EntropyModel(nn.Module):
         
         # Otherwise, return logits only
         return x
+    
+
+
+# EntropyWrapper: PyTorch Lightning wrapper for the EntropyModel
+class EntropyWrapper(L.LightningModule):
+    """
+    EntropyWrapper: PyTorch Lightning module for training the EntropyModel.
+
+    This wrapper integrates the EntropyModel with PyTorch Lightning, handling training steps,
+    optimizer configuration, and logging. It enables efficient training and monitoring of
+    the model using Lightning's features.
+
+    Args:
+        config (EntropyConfig): Configuration dataclass containing all model hyperparameters.
+        model (EntropyModel): The main transformer model to be trained.
+
+    Attributes:
+        config (EntropyConfig): Model configuration.
+        model (EntropyModel): The transformer model.
+        optimizer (torch.optim.Optimizer): Optimizer for training.
+    """
+
+    def __init__(self, config: EntropyConfig, model: EntropyModel) -> None:
+        """
+        Initializes the EntropyWrapper Lightning module.
+
+        Args:
+            config (EntropyConfig): Model configuration.
+            model (EntropyModel): The transformer model to be wrapped.
+        """
+        super().__init__()
+        self.config = config
+        self.model = model
+        # Configure optimizer for the model
+        self.optimizer = self.configure_optimizers()
+
+    def training_step(self, batch, batch_idx):
+        """
+        Defines a single training step.
+
+        Sets the model to training mode, computes loss, performs optimizer step, and logs training loss.
+
+        Args:
+            batch (tuple): A batch of (inputs, targets) from the dataloader.
+            batch_idx (int): Index of the current batch.
+
+        Returns:
+            torch.Tensor: The computed loss for the batch.
+        """
+        self.model.train()  # Ensure model is in training mode
+        optimizer = self.optimizers()  # Get optimizer from Lightning
+        optimizer.zero_grad()  # Zero gradients before backward pass
+
+        inputs, targets = batch
+        _, loss = self.model(inputs, targets)  # Forward pass and compute loss
+        self.log("Train_Loss", loss, prog_bar=True)  # Log training loss to progress bar
+
+        return loss
+
+    def configure_optimizers(self):
+        """
+        Configures and returns the optimizer for training.
+
+        Returns:
+            torch.optim.Optimizer: The optimizer for model parameters.
+        """
+        optimizer = configure_optimizer(self.model)
+        return optimizer
+    
+
+
+
+def configure_optimizer(model: nn.Module) -> torch.optim.Optimizer:
+    """
+    Configures the AdamW optimizer for the EntropyModel.
+
+    This function groups model parameters into those that should receive weight decay
+    (typically 2D tensors such as weights in linear layers and embeddings) and those that should not
+    (typically biases and normalization parameters). It then creates an AdamW optimizer with
+    appropriate weight decay settings for each group.
+
+    Args:
+        model (nn.Module): The model whose parameters will be optimized.
+
+    Returns:
+        torch.optim.Optimizer: Configured AdamW optimizer.
+    """
+    # Collect all parameters that require gradients
+    param_dict = {pn: p for pn, p in model.named_parameters()}
+    param_dict = {pn: p for pn, p in param_dict.items() if p.requires_grad}
+
+    # Group parameters: 2D tensors (weights) get weight decay, others (biases, norms) do not
+    decay_params = [p for _, p in param_dict.items() if p.dim() >= 2]
+    nodecay_params = [p for _, p in param_dict.items() if p.dim() < 2]
+
+    # Create AdamW optimizer, using fused implementation if available for speed
+    optimizer = torch.optim.AdamW(
+        [
+            {'params': decay_params, 'weight_decay': 0.1},
+            {'params': nodecay_params, 'weight_decay': 0.0}
+        ],
+        lr=0.0001,
+        betas=(0.9, 0.999),
+        eps=1e-8,
+        fused=True
+    )
+    return optimizer
