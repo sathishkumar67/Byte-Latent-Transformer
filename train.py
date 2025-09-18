@@ -8,26 +8,32 @@ from BLT.dataset import TokenDataset
 from huggingface_hub import hf_hub_download
 
 
+# Define constants
+LOCAL_DIR = os.getcwd()
+MODEL_REPO = "pt-sk/BLT_Entropy_Checkpoints"
+DATASET_REPO = "pt-sk/Text_Bytes_Tokens"
+DATASET_REPO_FOLDER = "wikipedia_512_pretraining"
+CKPT_NAME = "entropy_ckpt_4.ckpt"
+TEXT_FILES = ["tokenized_text5.npy", "tokenized_text6.npy"]
 
 
 # download the checkpoint for the model
-hf_hub_download(repo_id="pt-sk/BLT_Entropy_Checkpoints",
-                filename="entropy_ckpt_4.ckpt",
+hf_hub_download(repo_id=MODEL_REPO,
+                filename=CKPT_NAME,
                 repo_type="model",
-                local_dir="/kaggle/working/")
+                local_dir=LOCAL_DIR)
 
 # download the tokenized text
-text_files = ["tokenized_text5.npy", "tokenized_text6.npy"]
-for file in text_files:
-    hf_hub_download(repo_id="pt-sk/Text_Bytes_Tokens",
-                    filename=f"wikipedia_512_pretraining/{file}",
+for file in TEXT_FILES:
+    hf_hub_download(repo_id=DATASET_REPO,
+                    filename=f"{DATASET_REPO_FOLDER}/{file}",
                     repo_type="dataset",
-                    local_dir="/kaggle/working/")
+                    local_dir=LOCAL_DIR)
 
 # load the tokenized text
 tokens = []
-for file in text_files:
-    tokens += np.load(f"/kaggle/working/wikipedia_512_pretraining/{file}", allow_pickle=True).tolist()
+for file in TEXT_FILES:
+    tokens += np.load(f"{LOCAL_DIR}/{DATASET_REPO_FOLDER}/{file}", allow_pickle=True).tolist()
 print(f"Loaded {len(tokens)} tokenized sequences.")
 
 # Initialize model and config
@@ -52,14 +58,14 @@ dataloader = torch.utils.data.DataLoader(dataset,
                                         prefetch_factor=2)
 
 # Initialize model wrapper
-model_wrapper = EntropyWrapper.load_from_checkpoint("/kaggle/working/entropy_ckpt_4.ckpt", config=config, model=model)
+model_wrapper = EntropyWrapper.load_from_checkpoint(f"{LOCAL_DIR}/{CKPT_NAME}", config=config, model=model)
 
 # Initialize trainer
 trainer = Trainer(max_epochs=1,
                   accelerator="cuda",
                   accumulate_grad_batches=8,
                   gradient_clip_val=1.0,
-                  devices=1,
+                  devices=2,
                   strategy="ddp")
 
 # Train the model
