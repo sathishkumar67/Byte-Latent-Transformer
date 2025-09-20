@@ -14,8 +14,8 @@ LOCAL_DIR = os.getcwd()
 MODEL_REPO = "pt-sk/BLT_Entropy_Checkpoints"
 DATASET_REPO = "pt-sk/Text_Bytes_Tokens"
 DATASET_REPO_FOLDER = "wikipedia_512_pretraining"
-CKPT_NAME = "entropy_ckpt_5.ckpt"
-TEXT_FILES = ["tokenized_text6.npy", "tokenized_text7.npy"]
+CKPT_NAME = "entropy_ckpt_6.ckpt"
+TEXT_FILES = ["tokenized_text7.npy", "tokenized_text8.npy"]
 
 
 # download the checkpoint for the model
