@@ -14,8 +14,10 @@ LOCAL_DIR = os.getcwd()
 MODEL_REPO = "pt-sk/BLT_Entropy_Checkpoints"
 DATASET_REPO = "pt-sk/Text_Bytes_Tokens"
 DATASET_REPO_FOLDER = "wikipedia_512_pretraining"
-CKPT_NAME = "entropy_ckpt_6.ckpt"
-TEXT_FILES = ["tokenized_text7.npy", "tokenized_text8.npy"]
+CKPT_NAME = "entropy_ckpt_7.ckpt"
+TEXT_FILES = ["tokenized_text8.npy", "tokenized_text9.npy"]
+SAVED_CKPT_PATH = f"{LOCAL_DIR}/lightning_logs/version_0/checkpoints/"
+PATH_IN_REPO_NAME = "entropy_ckpt_8.ckpt"
 
 
 # download the checkpoint for the model
@@ -71,16 +73,22 @@ trainer = Trainer(max_epochs=1,
 trainer.fit(model_wrapper, dataloader)
 
 
-# SAVED_CKPT_PATH = f"{LOCAL_DIR}/lightning_logs/version_0/checkpoints/"
-# # list all files in the directory
-# files = os.listdir(SAVED_CKPT_PATH)
-# SAVED_CKPT_FILE_NAME = f"{SAVED_CKPT_PATH}/{files[0]}"
+try:
+    # list all files in the directory
+    files = os.listdir(SAVED_CKPT_PATH)
+    SAVED_CKPT_FILE_NAME = f"{SAVED_CKPT_PATH}/{files[0]}"
+except Exception as e:
+    print(type(e).__name__)
 
-# # push the updated checkpoint to the Hugging Face Hub
-# api = HfApi()
-# api.upload_file(
-#     path_or_fileobj=SAVED_CKPT_FILE_NAME,       # Path to your local file
-#     path_in_repo="file.txt",                             # Desired path in the repo
-#     repo_id="username/repo-name",                        # Your Hugging Face repo ID (e.g., "john/my-cool-repo")
-#     repo_type="model",                                   # Optional: "model", "dataset", or "space"
-# )
+
+try:
+    # push the updated checkpoint to the Hugging Face Hub
+    api = HfApi()
+    api.upload_file(
+        path_or_fileobj=SAVED_CKPT_FILE_NAME,       
+        path_in_repo=PATH_IN_REPO_NAME,                             
+        repo_id="pt-sk/BLT_Entropy_Checkpoints",                        
+        repo_type="model",                                   
+    )
+except Exception as e:
+    print(type(e).__name__)
