@@ -14,10 +14,10 @@ LOCAL_DIR = os.getcwd()
 MODEL_REPO = "pt-sk/BLT_Entropy_Checkpoints"
 DATASET_REPO = "pt-sk/Text_Bytes_Tokens"
 DATASET_REPO_FOLDER = "wikipedia_512_pretraining"
-CKPT_NAME = "entropy_ckpt_7.ckpt"
-TEXT_FILES = ["tokenized_text8.npy", "tokenized_text9.npy"]
+CKPT_NAME = "entropy_ckpt_8.ckpt"
+TEXT_FILES = ["tokenized_text10.npy", "tokenized_text11.npy"]
 SAVED_CKPT_PATH = f"{LOCAL_DIR}/lightning_logs/version_0/checkpoints/"
-PATH_IN_REPO_NAME = "entropy_ckpt_8.ckpt"
+PATH_IN_REPO_NAME = "entropy_ckpt_9.ckpt"
 
 
 # download the checkpoint for the model
@@ -87,7 +87,7 @@ try:
     api.upload_file(
         path_or_fileobj=SAVED_CKPT_FILE_NAME,       
         path_in_repo=PATH_IN_REPO_NAME,                             
-        repo_id="pt-sk/BLT_Entropy_Checkpoints",                        
+        repo_id=MODEL_REPO,                        
         repo_type="model",                                   
     )
 except Exception as e:
