@@ -5,7 +5,7 @@ import numpy as np
 from lightning.pytorch import Trainer
 from BLT.entropy import EntropyModel, EntropyConfig, EntropyWrapper, configure_optimizer
 from BLT.dataset import TokenDataset
-from huggingface_hub import HfApi, hf_hub_download
+from huggingface_hub import hf_hub_download
 
 
 
@@ -14,10 +14,8 @@ LOCAL_DIR = os.getcwd()
 MODEL_REPO = "pt-sk/BLT_Entropy_Checkpoints"
 DATASET_REPO = "pt-sk/Text_Bytes_Tokens"
 DATASET_REPO_FOLDER = "wikipedia_512_pretraining"
-CKPT_NAME = "entropy_ckpt_8.ckpt"
-TEXT_FILES = ["tokenized_text10.npy", "tokenized_text11.npy"]
-SAVED_CKPT_PATH = f"{LOCAL_DIR}/lightning_logs/version_0/checkpoints/"
-PATH_IN_REPO_NAME = "entropy_ckpt_9.ckpt"
+CKPT_NAME = "entropy_ckpt_9.ckpt"
+TEXT_FILES = ["tokenized_text12.npy", "tokenized_text13.npy"]
 
 
 # download the checkpoint for the model
@@ -71,24 +69,3 @@ trainer = Trainer(max_epochs=1,
 
 # Train the model
 trainer.fit(model_wrapper, dataloader)
-
-
-try:
-    # list all files in the directory
-    files = os.listdir(SAVED_CKPT_PATH)
-    SAVED_CKPT_FILE_NAME = f"{SAVED_CKPT_PATH}/{files[0]}"
-except Exception as e:
-    print(type(e).__name__)
-
-
-try:
-    # push the updated checkpoint to the Hugging Face Hub
-    api = HfApi()
-    api.upload_file(
-        path_or_fileobj=SAVED_CKPT_FILE_NAME,       
-        path_in_repo=PATH_IN_REPO_NAME,                             
-        repo_id=MODEL_REPO,                        
-        repo_type="model",                                   
-    )
-except Exception as e:
-    print(type(e).__name__)
